@@ -38,7 +38,7 @@ jobs:
               [hd addSubview:gr];
               
               UILabel *tl = [[UILabel alloc] initWithFrame:CGRectMake(45,0,mw-90,hh)];
-              tl.text=@"BY ACHO PRODUCTION"; tl.textColor=[UIColor whiteColor]; tl.font=[UIFont boldSystemFontOfSize:12]; tl.textAlignment=NSTextAlignmentCenter;
+              tl.text=@"BY Malec67"; tl.textColor=[UIColor whiteColor]; tl.font=[UIFont boldSystemFontOfSize:12]; tl.textAlignment=NSTextAlignmentCenter;
               tl.adjustsFontSizeToFitWidth=YES; tl.minimumScaleFactor=0.7;
               [hd addSubview:tl];
               
