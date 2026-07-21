@@ -12,34 +12,67 @@ jobs:
           #import <objc/runtime.h>
           @interface AchoMenuViewController : UIViewController
           @end
-          @implementation AchoMenuViewController
+          @implementation AchoMenuViewController {
+              UIView *_container;
+              NSArray *_rows;
+              NSInteger _selectedIndex;
+          }
           - (void)viewDidLoad {
               [super viewDidLoad];
-              CGFloat mw = self.view.bounds.size.width * 0.38;
-              CGFloat rh = 44.0;
+              CGFloat mw = self.view.bounds.size.width * 0.55;
+              CGFloat rh = 48.0;
               NSArray *it = @[@"UNLIMITED AMMO",@"UNLIMITED AMMO 2",@"NO RECOIL",@"WALLSHOT",@"RAPID FIRE",@"TELEKILL",@"MASSKILL"];
+              _rows = it;
+              _selectedIndex = -1;
               CGFloat hh = rh, th = hh + it.count * rh;
-              UIView *ct = [[UIView alloc] initWithFrame:CGRectMake((self.view.bounds.size.width-mw)/2,(self.view.bounds.size.height-th)/2,mw,th)];
-              ct.backgroundColor = [UIColor colorWithRed:0.48 green:0.48 blue:0.48 alpha:1.0];
-              [self.view addSubview:ct];
+              _container = [[UIView alloc] initWithFrame:CGRectMake((self.view.bounds.size.width-mw)/2,(self.view.bounds.size.height-th)/2,mw,th)];
+              _container.backgroundColor = [UIColor colorWithRed:0.48 green:0.48 blue:0.48 alpha:1.0];
+              [self.view addSubview:_container];
+              
               UIView *hd = [[UIView alloc] initWithFrame:CGRectMake(0,0,mw,hh)];
               hd.backgroundColor = [UIColor colorWithRed:0.094 green:0.094 blue:0.094 alpha:1.0];
-              [ct addSubview:hd];
-              UILabel *gr = [[UILabel alloc] initWithFrame:CGRectMake(12,0,30,hh)];
+              [_container addSubview:hd];
+              
+              UILabel *gr = [[UILabel alloc] initWithFrame:CGRectMake(10,0,35,hh)];
               gr.text=@"⚙"; gr.textColor=[UIColor whiteColor]; gr.font=[UIFont systemFontOfSize:18]; gr.textAlignment=NSTextAlignmentCenter;
               [hd addSubview:gr];
-              UILabel *tl = [[UILabel alloc] initWithFrame:CGRectMake(0,0,mw,hh)];
-              tl.text=@"BY ACHO PRODUCTION"; tl.textColor=[UIColor whiteColor]; tl.font=[UIFont boldSystemFontOfSize:13]; tl.textAlignment=NSTextAlignmentCenter;
+              
+              UILabel *tl = [[UILabel alloc] initWithFrame:CGRectMake(45,0,mw-90,hh)];
+              tl.text=@"BY ACHO PRODUCTION"; tl.textColor=[UIColor whiteColor]; tl.font=[UIFont boldSystemFontOfSize:12]; tl.textAlignment=NSTextAlignmentCenter;
+              tl.adjustsFontSizeToFitWidth=YES; tl.minimumScaleFactor=0.7;
               [hd addSubview:tl];
+              
+              UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+              closeBtn.frame=CGRectMake(mw-40,0,35,hh);
+              [closeBtn setTitle:@"✕" forState:UIControlStateNormal];
+              [closeBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+              closeBtn.titleLabel.font=[UIFont systemFontOfSize:16];
+              [closeBtn addTarget:self action:@selector(close) forControlEvents:UIControlEventTouchUpInside];
+              [hd addSubview:closeBtn];
+              
               for(int i=0;i<it.count;i++){
                   UIView *rw = [[UIView alloc] initWithFrame:CGRectMake(0,hh+i*rh,mw,rh)];
+                  rw.tag=i;
                   UILabel *lb = [[UILabel alloc] initWithFrame:CGRectMake(0,0,mw,rh)];
-                  lb.text=it[i]; lb.textColor=[UIColor whiteColor]; lb.font=[UIFont boldSystemFontOfSize:14]; lb.textAlignment=NSTextAlignmentCenter;
+                  lb.text=it[i]; lb.textColor=[UIColor whiteColor]; lb.font=[UIFont boldSystemFontOfSize:15]; lb.textAlignment=NSTextAlignmentCenter;
                   [rw addSubview:lb];
-                  if(i<it.count-1){ UIView *sp = [[UIView alloc] initWithFrame:CGRectMake(0,rh-0.5,mw,0.5)]; sp.backgroundColor=[UIColor colorWithRed:0.2 green:0.2 blue:0.2 alpha:1.0]; [rw addSubview:sp]; }
-                  [ct addSubview:rw];
+                  if(i<it.count-1){ UIView *sp = [[UIView alloc] initWithFrame:CGRectMake(10,rh-0.5,mw-20,0.5)]; sp.backgroundColor=[UIColor colorWithRed:0.25 green:0.25 blue:0.25 alpha:1.0]; [rw addSubview:sp]; }
+                  UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
+                  btn.frame=rw.bounds; btn.tag=i;
+                  [btn addTarget:self action:@selector(selectItem:) forControlEvents:UIControlEventTouchUpInside];
+                  [rw addSubview:btn];
+                  [_container addSubview:rw];
               }
-              [self.view addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(close)]];
+          }
+          - (void)selectItem:(UIButton *)btn {
+              NSInteger idx = btn.tag;
+              for(UIView *v in _container.subviews){
+                  if(v.tag >= 0 && v.tag < _rows.count){
+                      v.backgroundColor = (v.tag == idx) ? [UIColor colorWithWhite:0.7 alpha:1.0] : [UIColor clearColor];
+                  }
+              }
+              _selectedIndex = idx;
+              NSLog(@"[ACHO MENU] Selected: %@", _rows[idx]);
           }
           - (void)close { [self dismissViewControllerAnimated:NO completion:nil]; }
           + (void)show {
