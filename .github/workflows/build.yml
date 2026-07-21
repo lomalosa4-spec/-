@@ -1,0 +1,83 @@
+name: Build ModMenu dylib
+on: [push]
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          cat > Tweak.m << 'EOF'
+          #import <UIKit/UIKit.h>
+          #import <objc/runtime.h>
+          @interface DraggableButton : UIButton
+          @end
+          @implementation DraggableButton { CGPoint sp; }
+          - (instancetype)initWithFrame:(CGRect)f {
+              self = [super initWithFrame:f];
+              self.backgroundColor = [UIColor colorWithRed:0.95 green:0.1 blue:0.15 alpha:0.9];
+              self.layer.cornerRadius = 27;
+              self.layer.borderWidth = 2.5;
+              self.layer.borderColor = [UIColor whiteColor].CGColor;
+              [self setTitle:@"⚡" forState:UIControlStateNormal];
+              self.titleLabel.font = [UIFont systemFontOfSize:24];
+              [self addGestureRecognizer:[[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(pan:)]];
+              [self addTarget:self action:@selector(openMenu) forControlEvents:UIControlEventTouchUpInside];
+              return self;
+          }
+          - (void)pan:(UIPanGestureRecognizer *)g {
+              UIView *sv = self.superview; if(!sv) return;
+              if(g.state == UIGestureRecognizerStateBegan) sp = self.center;
+              else if(g.state == UIGestureRecognizerStateChanged) { CGPoint t = [g translationInView:sv]; self.center = CGPointMake(sp.x+t.x, sp.y+t.y); }
+              else if(g.state == UIGestureRecognizerStateEnded) {
+                  CGFloat m=30, tx=(self.center.x<sv.bounds.size.width/2)?m:sv.bounds.size.width-m, ty=MAX(m,MIN(sv.bounds.size.height-m,self.center.y));
+                  [UIView animateWithDuration:0.3 delay:0 usingSpringWithDamping:0.7 initialSpringVelocity:0.5 options:0 animations:^{ self.center=CGPointMake(tx,ty); } completion:nil];
+              }
+          }
+          - (void)openMenu {
+              dispatch_async(dispatch_get_main_queue(), ^{
+                  UIViewController *m = [[UIViewController alloc] init];
+                  m.view.backgroundColor = [UIColor colorWithRed:0.04 green:0.04 blue:0.08 alpha:0.97];
+                  m.modalPresentationStyle = UIModalPresentationFullScreen;
+                  UILabel *t = [[UILabel alloc] initWithFrame:CGRectMake(20,60,m.view.bounds.size.width-40,35)];
+                  t.text=@"⚡ SWILL MOD MENU"; t.textColor=[UIColor whiteColor]; t.font=[UIFont boldSystemFontOfSize:25]; t.textAlignment=NSTextAlignmentCenter;
+                  [m.view addSubview:t];
+                  NSArray *btns = @[@"🛡️ God Mode",@"🔫 Infinite Ammo",@"🎯 No Recoil",@"👁️ ESP",@"💰 999999 Gold"];
+                  for(int i=0;i<btns.count;i++){
+                      UIButton *b = [UIButton buttonWithType:UIButtonTypeSystem];
+                      b.frame=CGRectMake(25,120+i*65,m.view.bounds.size.width-50,50);
+                      [b setTitle:btns[i] forState:UIControlStateNormal];
+                      [b setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+                      b.titleLabel.font=[UIFont boldSystemFontOfSize:15];
+                      b.backgroundColor=[UIColor colorWithWhite:0.12 alpha:0.8];
+                      b.layer.cornerRadius=14;
+                      b.layer.borderWidth=1;
+                      b.layer.borderColor=[UIColor colorWithWhite:0.2 alpha:1].CGColor;
+                      [m.view addSubview:b];
+                  }
+                  UIButton *c = [UIButton buttonWithType:UIButtonTypeSystem];
+                  c.frame=CGRectMake(30,m.view.bounds.size.height-100,m.view.bounds.size.width-60,52);
+                  [c setTitle:@"✕ CLOSE" forState:UIControlStateNormal];
+                  [c setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+                  c.titleLabel.font=[UIFont boldSystemFontOfSize:17];
+                  c.backgroundColor=[UIColor colorWithWhite:0.1 alpha:0.9];
+                  c.layer.cornerRadius=26;
+                  c.layer.borderWidth=1.5;
+                  c.layer.borderColor=[UIColor redColor].CGColor;
+                  [c addTarget:m action:@selector(dismiss) forControlEvents:UIControlEventTouchUpInside];
+                  [m.view addSubview:c];
+                  [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:m animated:YES completion:nil];
+              });
+          }
+          @end
+          static void(*orig)(id,SEL);
+          void hk(id s,SEL c){orig(s,c);static dispatch_once_t o;dispatch_once(&o,^{dispatch_after(dispatch_time(DISPATCH_TIME_NOW,2*NSEC_PER_SEC),dispatch_get_main_queue(),^{DraggableButton *b=[[DraggableButton alloc]initWithFrame:CGRectMake(15,100,54,54)];[[UIApplication sharedApplication].keyWindow addSubview:b];});});}
+          __attribute__((constructor))static void init(){Method m=class_getInstanceMethod([UIViewController class],@selector(viewDidLoad));if(m){orig=(void*)method_getImplementation(m);method_setImplementation(m,(IMP)hk);}}
+          EOF
+          xcrun -sdk iphoneos clang -arch arm64 -miphoneos-version-min=14.0 -dynamiclib -framework UIKit -framework Foundation -framework CoreGraphics -framework QuartzCore -fobjc-arc -o ModMenu.dylib Tweak.m
+          ls -la ModMenu.dylib
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: ModMenu
+          path: ModMenu.dylib
